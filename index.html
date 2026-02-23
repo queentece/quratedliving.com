@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Q</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@200;300;400&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black:    #000000;
+    --obsidian: #0e0e0e;
+    --panel:    #141414;
+    --surface:  #1c1c1c;
+    --gold:     #b8a07a;
+    --gold-dim: #7a6a52;
+    --white:    #eeeeee;
+    --grey:     #555555;
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-body:    'Montserrat', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: var(--font-body);
+    font-weight: 300;
+    font-size: 14px;
+    line-height: 1.9;
+    letter-spacing: 0.04em;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* Grain overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ── PAGES ── */
+  .page {
+    min-height: 100vh;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 24px;
+  }
+  .page.active { display: flex; }
+  .fade-in { animation: fadeUp 1.2s ease forwards; }
+  .fade-in-slow { animation: fadeUp 2s ease forwards; }
+  .fade-in-delay { animation: fadeUp 1.2s ease 0.4s both; }
+  .fade-in-delay-2 { animation: fadeUp 1.2s ease 0.8s both; }
+  .fade-in-delay-3 { animation: fadeUp 1.2s ease 1.2s both; }
+  .fade-in-delay-4 { animation: fadeUp 1.2s ease 1.6s both; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ──────────────────────────────────────────
+     LAYER 1 — THE LOCKED DOOR
+  ────────────────────────────────────────── */
+  #layer-door {
+    background: var(--black);
+    position: relative;
+  }
+
+  .door-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 440px;
+  }
+
+  .q-wordmark {
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: clamp(100px, 18vw, 160px);
+    color: var(--white);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    opacity: 0;
+    animation: fadeUp 2s ease 0.2s forwards;
+  }
+
+  .door-rule {
+    width: 1px;
+    height: 64px;
+    background: linear-gradient(to bottom, transparent, var(--gold-dim), transparent);
+    margin: 28px 0 32px;
+    opacity: 0;
+    animation: fadeUp 1.5s ease 0.8s forwards;
+  }
+
+  .door-tagline {
+    font-weight: 200;
+    font-size: 10px;
+    color: var(--grey);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: 52px;
+    opacity: 0;
+    animation: fadeUp 1.5s ease 1.2s forwards;
+  }
+
+  .code-form {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    opacity: 0;
+    animation: fadeUp 1.5s ease 1.6s forwards;
+  }
+
+  .code-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--surface);
+    color: var(--white);
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    letter-spacing: 0.4em;
+    text-align: center;
+    text-transform: uppercase;
+    padding: 16px 0;
+    outline: none;
+    transition: border-color 0.5s ease;
+    caret-color: var(--gold);
+  }
+  .code-input::placeholder {
+    color: var(--grey);
+    letter-spacing: 0.25em;
+    font-size: 10px;
+  }
+  .code-input:focus { border-bottom-color: var(--gold-dim); }
+
+  .code-error {
+    font-size: 9px;
+    color: #7a3535;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-top: 12px;
+    height: 14px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .code-error.show { opacity: 1; }
+
+  .code-btn {
+    margin-top: 28px;
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+    font-family: var(--font-body);
+    font-weight: 200;
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    padding: 15px 48px;
+    cursor: pointer;
+    transition: all 0.5s ease;
+  }
+  .code-btn:hover {
+    background: var(--gold);
+    color: var(--black);
+    border-color: var(--gold);
+    letter-spacing: 0.45em;
+  }
+
+  /* ──────────────────────────────────────────
+     LAYER 2 — MEMBERS PAGE
+  ────────────────────────────────────────── */
+  #layer-members {
+    background: var(--obsidian);
+    padding: 0;
+    justify-content: flex-start;
+    align-items: stretch;
+  }
+
+  /* Hero */
+  .m-hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 40px;
+    position: relative;
+    border-bottom: 1px solid var(--surface);
+  }
+  .m-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 50% at 50% 65%, rgba(184,160,122,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .m-eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 300;
+    margin-bottom: 56px;
+    opacity: 0.6;
+  }
+
+  .m-headline {
+    font-family: var(--font-display);
+    font-weight: 300;
+    font-size: clamp(32px, 6vw, 62px);
+    line-height: 1.2;
+    text-align: center;
+    color: var(--white);
+    max-width: 800px;
+    letter-spacing: -0.01em;
+  }
+
+  .m-headline em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .m-rule {
+    width: 40px;
+    height: 1px;
+    background: var(--gold-dim);
+    margin: 52px auto;
+  }
+
+  .m-body {
+    max-width: 560px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 300;
+    color: #999;
+    line-height: 2;
+    letter-spacing: 0.05em;
+  }
+
+  .m-body p + p { margin-top: 24px; }
+
+  .m-body strong {
+    color: var(--white);
+    font-weight: 400;
+  }
+
+  .m-pillars {
+    display: flex;
+    gap: 1px;
+    margin-top: 80px;
+    width: 100%;
+    max-width: 720px;
+  }
+
+  .m-pillar {
+    flex: 1;
+    background: var(--panel);
+    padding: 36px 28px;
+    text-align: center;
+    border-top: 1px solid var(--surface);
+  }
+
+  .m-pillar-num {
+    font-family: var(--font-display);
+    font-size: 36px;
+    font-weight: 300;
+    color: var(--gold);
+    opacity: 0.4;
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+
+  .m-pillar-label {
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--grey);
+    font-weight: 300;
+  }
+
+  /* Statement band */
+  .m-statement {
+    width: 100%;
+    padding: 80px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid var(--surface);
+    background: var(--panel);
+  }
+
+  .m-statement-text {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(20px, 4vw, 36px);
+    color: var(--white);
+    text-align: center;
+    max-width: 680px;
+    line-height: 1.5;
+    letter-spacing: 0.01em;
+    opacity: 0.85;
+  }
+
+  /* Process section */
+  .m-process {
+    width: 100%;
+    padding: 100px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-bottom: 1px solid var(--surface);
+  }
+
+  .m-section-label {
+    font-size: 9px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 60px;
+  }
+
+  .m-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .m-step {
+    display: flex;
+    gap: 32px;
+    padding: 32px 0;
+    border-bottom: 1px solid var(--surface);
+    align-items: flex-start;
+  }
+  .m-step:last-child { border-bottom: none; }
+
+  .m-step-num {
+    font-family: var(--font-display);
+    font-size: 11px;
+    color: var(--gold-dim);
+    letter-spacing: 0.1em;
+    padding-top: 3px;
+    min-width: 28px;
+  }
+
+  .m-step-content h3 {
+    font-family: var(--font-body);
+    font-weight: 300;
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--white);
+    margin-bottom: 8px;
+  }
+
+  .m-step-content p {
+    font-size: 12px;
+    color: var(--grey);
+    line-height: 1.9;
+    letter-spacing: 0.04em;
+  }
+
+  /* CTA section */
+  .m-cta {
+    width: 100%;
+    padding: 120px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    background: var(--obsidian);
+  }
+
+  .m-cta-q {
+    font-family: var(--font-display);
+    font-size: 72px;
+    font-weight: 300;
+    color: var(--white);
+    line-height: 1;
+    margin-bottom: 40px;
+    opacity: 0.15;
+  }
+
+  .m-cta-text {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--grey);
+    text-align: center;
+    margin-bottom: 48px;
+    font-weight: 200;
+  }
+
+  .m-cta-challenge {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: clamp(16px, 3vw, 24px);
+    color: var(--white);
+    text-align: center;
+    margin-bottom: 56px;
+    max-width: 500px;
+    line-height: 1.6;
+    opacity: 0.7;
+  }
+
+  .apply-btn {
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+    font-family: var(--font-body);
+    font-weight: 200;
+    font-size: 9px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    padding: 18px 56px;
+    cursor: pointer;
+    transition: all 0.5s ease;
+  }
+  .apply-btn:hover {
+    background: var(--gold);
+    color: var(--black);
+    border-color: var(--gold);
+    letter-spacing: 0.5em;
+  }
+
+  /* ──────────────────────────────────────────
+     LAYER 3 — THE APPLICATION
+  ────────────────────────────────────────── */
+  #layer-apply {
+    background: var(--obsidian);
+    padding: 80px 24px;
+    min-height: 100vh;
+    justify-content: center;
+  }
+
+  .apply-inner {
+    width: 100%;
+    max-width: 520px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .apply-q {
+    font-family: var(--font-display);
+    font-size: 48px;
+    font-weight: 300;
+    color: var(--white);
+    line-height: 1;
+    margin-bottom: 8px;
+    opacity: 0.2;
+  }
+
+  .apply-heading {
+    font-family: var(--font-display);
+    font-size: clamp(28px, 5vw, 44px);
+    font-weight: 300;
+    color: var(--white);
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+
+  .apply-subheading {
+    font-size: 11px;
+    color: var(--grey);
+    letter-spacing: 0.08em;
+    margin-bottom: 60px;
+    line-height: 1.9;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 40px;
+  }
+
+  .form-label {
+    font-size: 9px;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    font-weight: 300;
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--surface);
+    color: var(--white);
+    font-family: var(--font-body);
+    font-weight: 300;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    padding: 14px 0;
+    outline: none;
+    transition: border-color 0.4s ease;
+    width: 100%;
+    -webkit-appearance: none;
+    caret-color: var(--gold);
+  }
+
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    border-bottom-color: var(--gold-dim);
+  }
+
+  .form-select {
+    cursor: pointer;
+    background: var(--obsidian);
+    color: var(--white);
+  }
+  .form-select option { background: var(--panel); color: var(--white); }
+
+  .form-textarea {
+    resize: none;
+    min-height: 60px;
+  }
+
+  .form-divider {
+    width: 100%;
+    height: 1px;
+    background: var(--surface);
+    margin: 12px 0 40px;
+  }
+
+  .submit-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--gold-dim);
+    color: var(--gold);
+    font-family: var(--font-body);
+    font-weight: 200;
+    font-size: 9px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.5s ease;
+    margin-top: 8px;
+  }
+  .submit-btn:hover {
+    background: var(--gold);
+    color: var(--black);
+    border-color: var(--gold);
+  }
+
+  .apply-disclaimer {
+    font-size: 9px;
+    color: var(--grey);
+    letter-spacing: 0.1em;
+    text-align: center;
+    margin-top: 24px;
+    line-height: 1.9;
+  }
+
+  /* ──────────────────────────────────────────
+     LAYER 4 — CONFIRMATION
+  ────────────────────────────────────────── */
+  #layer-confirm {
+    background: var(--black);
+    text-align: center;
+    gap: 0;
+  }
+
+  .confirm-q {
+    font-family: var(--font-display);
+    font-size: clamp(80px, 16vw, 140px);
+    font-weight: 300;
+    color: var(--white);
+    line-height: 1;
+    margin-bottom: 40px;
+    opacity: 0.08;
+  }
+
+  .confirm-rule {
+    width: 1px;
+    height: 56px;
+    background: linear-gradient(to bottom, transparent, var(--gold-dim), transparent);
+    margin: 0 auto 40px;
+  }
+
+  .confirm-heading {
+    font-family: var(--font-display);
+    font-size: clamp(22px, 4vw, 36px);
+    font-weight: 300;
+    color: var(--white);
+    margin-bottom: 24px;
+    letter-spacing: -0.01em;
+  }
+
+  .confirm-body {
+    font-size: 12px;
+    color: var(--grey);
+    letter-spacing: 0.08em;
+    line-height: 2;
+    max-width: 420px;
+    margin: 0 auto 56px;
+  }
+
+  .confirm-footnote {
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    opacity: 0.5;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .m-pillars { flex-direction: column; gap: 1px; }
+    .m-hero { padding: 60px 24px; }
+    .m-process { padding: 60px 24px; }
+    .m-cta { padding: 80px 24px; }
+    .m-statement { padding: 60px 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     LAYER 1 — LOCKED DOOR
+═══════════════════════════════════════════ -->
+<div class="page active" id="layer-door">
+  <div class="door-inner">
+    <div class="q-wordmark">Q</div>
+    <div class="door-rule"></div>
+    <p class="door-tagline">Most men never think about this.<br>You're not most men.</p>
+
+    <div class="code-form">
+      <input
+        class="code-input"
+        id="code-input"
+        type="text"
+        maxlength="12"
+        placeholder="Enter your referral code"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <div class="code-error" id="code-error">Invalid code. Access denied.</div>
+      <button class="code-btn" onclick="checkCode()">→</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LAYER 2 — MEMBERS PAGE
+═══════════════════════════════════════════ -->
+<div class="page" id="layer-members">
+
+  <!-- Hero -->
+  <div class="m-hero">
+    <p class="m-eyebrow fade-in">By Referral Only</p>
+    <h1 class="m-headline fade-in-delay">
+      You've handled<br>everything else.<br>
+      <em>Let someone handle this.</em>
+    </h1>
+    <div class="m-rule fade-in-delay-2"></div>
+    <div class="m-body fade-in-delay-3">
+      <p>This is not a design service.<br>
+      This is a transformation executed <strong>completely on your behalf</strong> —<br>
+      no meetings, no mood boards, no back and forth.</p>
+
+      <p>You hand over the keys.<br>
+      We handle everything.<br>
+      You come home to a different life.</p>
+
+      <p>Every successful man has a space that proves it.</p>
+    </div>
+
+    <div class="m-pillars fade-in-delay-4">
+      <div class="m-pillar">
+        <div class="m-pillar-num">01</div>
+        <div class="m-pillar-label">Referral Only</div>
+      </div>
+      <div class="m-pillar">
+        <div class="m-pillar-num">02</div>
+        <div class="m-pillar-label">Fully Confidential</div>
+      </div>
+      <div class="m-pillar">
+        <div class="m-pillar-num">03</div>
+        <div class="m-pillar-label">Done in a Weekend</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statement band -->
+  <div class="m-statement">
+    <p class="m-statement-text">
+      "Every client is referred. Every project is confidential.<br>
+      Every space is finished in a weekend.<br>
+      We work with one client at a time."
+    </p>
+  </div>
+
+  <!-- Process -->
+  <div class="m-process">
+    <p class="m-section-label">How It Works</p>
+    <div class="m-steps">
+      <div class="m-step">
+        <div class="m-step-num">I</div>
+        <div class="m-step-content">
+          <h3>You Request Consideration</h3>
+          <p>A short form. A brief conversation. We determine if the fit is right — for both of us.</p>
+        </div>
+      </div>
+      <div class="m-step">
+        <div class="m-step-num">II</div>
+        <div class="m-step-content">
+          <h3>You Step Away</h3>
+          <p>Deposit confirmed. Weekend scheduled. You leave the space entirely in our hands.</p>
+        </div>
+      </div>
+      <div class="m-step">
+        <div class="m-step-num">III</div>
+        <div class="m-step-content">
+          <h3>You Come Home</h3>
+          <p>Sunday evening. A different space. No explanation needed — it simply works.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="m-cta">
+    <div class="m-cta-q">Q</div>
+    <p class="m-cta-text">Referrals Only &nbsp;·&nbsp; Always</p>
+    <p class="m-cta-challenge">
+      "If you're wondering whether you qualify —<br>
+      you probably already know the answer."
+    </p>
+    <button class="apply-btn" onclick="showLayer('layer-apply')">Request Consideration</button>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LAYER 3 — APPLICATION FORM
+═══════════════════════════════════════════ -->
+<div class="page" id="layer-apply">
+  <div class="apply-inner">
+    <div class="apply-q fade-in">Q</div>
+    <h2 class="apply-heading fade-in-delay">Tell us about<br>your space.</h2>
+    <p class="apply-subheading fade-in-delay">This is the beginning of a short conversation.<br>
+    We'll be in touch within 48 hours if it's a fit.</p>
+
+    <div class="fade-in-delay-2">
+      <div class="form-group">
+        <label class="form-label">City / Location</label>
+        <input class="form-input" type="text" placeholder="New York, NY" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Type of Space</label>
+        <select class="form-select">
+          <option value="" disabled selected>Select one</option>
+          <option>Apartment</option>
+          <option>House</option>
+          <option>Penthouse</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Number of Rooms</label>
+        <select class="form-select">
+          <option value="" disabled selected>Select one</option>
+          <option>1</option>
+          <option>2</option>
+          <option>3</option>
+          <option>4 or more</option>
+        </select>
+      </div>
+
+      <div class="form-divider"></div>
+
+      <div class="form-group">
+        <label class="form-label">Target Investment</label>
+        <select class="form-select">
+          <option value="" disabled selected>Select a range</option>
+          <option>$10,000 – $20,000</option>
+          <option>$20,000 – $40,000</option>
+          <option>$40,000+</option>
+          <option>Let's discuss</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Describe Your Space in Three Words</label>
+        <input class="form-input" type="text" placeholder="e.g. dark, minimal, empty" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">How Did You Receive Your Referral Code?</label>
+        <input class="form-input" type="text" placeholder="Name or organization" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Best Contact Number</label>
+        <input class="form-input" type="tel" placeholder="+1 000 000 0000" />
+      </div>
+
+      <button class="submit-btn" onclick="showLayer('layer-confirm')">Request Consideration</button>
+
+      <p class="apply-disclaimer">
+        All information is held in strict confidence.<br>
+        Q does not share client data with any third party.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     LAYER 4 — CONFIRMATION
+═══════════════════════════════════════════ -->
+<div class="page" id="layer-confirm">
+  <div class="confirm-q fade-in">Q</div>
+  <div class="confirm-rule fade-in-delay"></div>
+  <h2 class="confirm-heading fade-in-delay-2">We have what we need.</h2>
+  <p class="confirm-body fade-in-delay-3">
+    If there's a fit, you'll hear from us directly<br>
+    within 48 hours.<br><br>
+    We appreciate your discretion.
+  </p>
+  <p class="confirm-footnote fade-in-delay-4">Referrals Only &nbsp;·&nbsp; Always</p>
+</div>
+
+<script>
+  // ── Valid codes — replace with your real codes ──
+  const VALID_CODES = ["EM001", "SS001", "KI001", "AM001", "SE001", "EN001", "LU001", "TD001", "LM001", "BC001", "CH001", "TM001", "MA001", "BL001", "WE001", "RR001", "LB001", "MC001", "BW001", "PR001", "PR002", "PR003"];
+
+  function checkCode() {
+    const input = document.getElementById('code-input').value.trim().toUpperCase();
+    const error = document.getElementById('code-error');
+
+    if (VALID_CODES.includes(input)) {
+      showLayer('layer-members');
+    } else {
+      error.classList.add('show');
+      document.getElementById('code-input').style.borderBottomColor = '#7a3535';
+      setTimeout(() => {
+        error.classList.remove('show');
+        document.getElementById('code-input').style.borderBottomColor = '';
+      }, 3000);
+    }
+  }
+
+  document.getElementById('code-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') checkCode();
+  });
+
+  function showLayer(id) {
+    document.querySelectorAll('.page').forEach(p => {
+      p.classList.remove('active');
+      p.style.display = 'none';
+    });
+    const target = document.getElementById(id);
+    target.style.display = 'flex';
+    setTimeout(() => target.classList.add('active'), 10);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Re-trigger animations
+    target.querySelectorAll('[class*="fade-in"]').forEach(el => {
+      el.style.animation = 'none';
+      void el.offsetHeight;
+      el.style.animation = '';
+    });
+  }
+</script>
+</body>
+</html>
